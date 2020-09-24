@@ -1,0 +1,13 @@
+import pandas as pd
+import numpy as np
+url = "https://dshs.texas.gov/coronavirus/TexasCOVID19DailyCountyCaseCountData.xlsx" #  sheets 'COVID-19 Cases'
+df = pd.read_excel(url , sheet_name = 'Cases by County',skiprows=2)
+df=df.truncate(before=0,after=253)  # Remove the useless rows
+df.shape[1]  # Read the number of columns, the days= (column numbers)-2
+df['Transmission Rate']=df['Cases 09-23']/200   #Calculate the transmission rate
+df['Transmission Rate']
+df2=df.sort_values('Transmission Rate', ascending=False)  # Sort the value
+df3=df2.iloc[0:5]   # Select five counties with high rates
+df4=df2.iloc[249:254]   # Select five counties with low rates
+df5 = df3.append(df4)   # Append two dataframes together
+df5
