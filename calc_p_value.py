@@ -1,4 +1,4 @@
-import data_acq
+from data_acq import *
 
 def main():
     county_list = get_population().keys()
