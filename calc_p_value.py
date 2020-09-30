@@ -4,6 +4,23 @@ def main():
     county_list = get_population().keys()
     tsa_list = get_region2county().keys()
 
+    # Hypothesis 7
+    county = 'NUECES'
+    date_param = '05-01~05-14'
+    y = get_cases(county, date_range=date_param, number_form='infection')
+    g1 = get_travel(county, attr='recreation', date_range=date_param)
+    g2 = get_travel(county, attr='grocery', date_range=date_param)
+    g3 = get_travel(county, attr='park', date_range=date_param)
+    g4 = get_travel(county, attr='transit', date_range=date_param)
+    g5 = get_travel(county, attr='work', date_range=date_param)
+    g6 = get_travel(county, attr='resident', date_range=date_param)
+    g_mean = get_travel(county, attr='mean', date_range=date_param)
+    #f_value, p_value = stats.f_oneway(y, g1, g2, g3, g4, g5, g6)
+    #print(f_value, p_value)
+    f_value, p_value = stats.f_oneway(y, g6) 
+    #f_value, p_value = stats.f_oneway(y, g1, g2)
+    print(f_value, p_value)
+
     # Hypothesis 5 (z test)
     date_param = '06-04~07-15'
     x, y = [], []

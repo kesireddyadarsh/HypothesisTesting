@@ -14,6 +14,8 @@ _grp_map = None
 _testing_map = None
 _fips_map = None
 _density_map = None
+_travel_map = None
+_metro_map = None
 
 '''
 Moving average / Moving mean
@@ -408,6 +410,139 @@ def get_fips(county=None):
     return _fips_map[county]
 
 '''
+Regenerate a file that only contains data in Texas,
+because the size of "2020_US_Region_Mobility_Report.csv" is too large.
+'''
+def filter_travel(): 
+    target_file = 'raw/2020_US_Region_Mobility_Report.csv'
+    new_csv = 'raw/Mobility_in_Texas.csv'
+    new_list = []
+    with open(target_file, newline='') as csvfile:
+        temp = csv.reader(csvfile, delimiter=',', quotechar='|')
+        for row in temp:
+            country_code, region, state, county_text, metro, iso, fips, date_text, recreation, grocery, park, transit, work, resident = row
+            # skip title
+            if country_code == 'country_region_code':
+                continue
+            if state == 'Texas' and county_text.strip() != '':
+                new_list.append([date_text, county_text, recreation, grocery, park, transit, work, resident])
+
+    with open(new_csv, 'a+', newline='') as csvfile:
+        spamwriter = csv.writer(csvfile, delimiter=',',quoting=csv.QUOTE_MINIMAL)
+        spamwriter.writerow(['date', 'county_text', 'recreation', 'grocery', 'park', 'transit', 'work', 'resident'])
+        for row in new_list:
+            spamwriter.writerow(row)
+
+'''
+@county: county name
+@attr: choices -> 'mean', 'recreation', 'grocery', 'park', 'transit', 'work', 'resident'
+@date_range: eg. "04-13~09-21"
+'''
+def get_travel(county, attr='mean', date_range=None): 
+    global _travel_map
+    if _travel_map == None:
+        _travel_map = {}
+        target_file = 'raw/Mobility_in_Texas.csv'
+        _travel_map = {
+            'date_from': '2020-02-15',
+            'total_days': 224,
+        }
+        with open(target_file, newline='') as csvfile:
+            temp = csv.reader(csvfile, delimiter=',', quotechar='|')
+            for row in temp:
+                date_text, county_text, recreation, grocery, park, transit, work, resident = row
+                # skip title and the last line
+                if date_text == 'date':
+                    continue
+                county_text = county_text[:-7].upper()
+                if county_text not in _travel_map:
+                    _travel_map[county_text] = {}
+                #  ===== recreation
+                if 'recreation' not in _travel_map[county_text]:
+                    _travel_map[county_text]['recreation'] = []
+                if recreation == '':
+                    recreation = 0
+                v1 = int(recreation)
+                _travel_map[county_text]['recreation'].append(v1)
+                #  ===== grocery
+                if 'grocery' not in _travel_map[county_text]:
+                    _travel_map[county_text]['grocery']= []
+                if grocery == '':
+                    grocery = 0
+                v2 = int(grocery)
+                _travel_map[county_text]['grocery'].append(v2)
+                #  ===== park
+                if 'park' not in _travel_map[county_text]:
+                    _travel_map[county_text]['park'] = []
+                if park == '':
+                    park = 0
+                v3 = int(park)
+                _travel_map[county_text]['park'].append(v3)
+                #  ===== transit
+                if 'transit' not in _travel_map[county_text]:
+                    _travel_map[county_text]['transit'] = []
+                if transit == '':
+                    transit = 0
+                v4 = int(transit)
+                _travel_map[county_text]['transit'].append(v4)
+                #  ===== work
+                if 'work' not in _travel_map[county_text]:
+                    _travel_map[county_text]['work'] = []
+                if work == '':
+                    work = 0
+                v5 = int(work)
+                _travel_map[county_text]['work'].append(v5)
+                #  ===== resident
+                if 'resident' not in _travel_map[county_text]:
+                    _travel_map[county_text]['resident'] = []
+                if resident == '':
+                    resident = 0
+                v6 = int(resident)
+                _travel_map[county_text]['resident'].append(v6)
+
+                # mean all data from v1 to v6 (except for value 0)
+                s = (v1+v2+v3+v4+v5+v6)
+                count = 0
+                for i in [v1, v2, v3, v4, v5, v6]:
+                    if i != 0:
+                        count += 1
+                if count == 0:
+                    mean = 0
+                else:
+                    mean = round(s / count, 1)
+                if 'mean' not in _travel_map[county_text]:
+                    _travel_map[county_text]['mean'] = []
+                _travel_map[county_text]['mean'].append(mean)
+
+    county = county.upper()
+    res_array = list(_travel_map[county][attr])
+
+    if date_range != None:
+        t1, t2 = date_range.split('~')
+        data_t1 = datetime.strptime(_travel_map['date_from'], '%Y-%m-%d')
+        data_total_days = _travel_map['total_days']
+        user_t1 = datetime.strptime('2020-'+t1, '%Y-%m-%d')
+        user_t2 = datetime.strptime('2020-'+t2, '%Y-%m-%d')
+        expected_days = (user_t2 - user_t1).days + 1
+        if expected_days > data_total_days:
+            raise Exception('data_range {} error: {} days (min: {})'.format(date_range, expected_days, data_total_days))
+        start_idx = (user_t1 - data_t1).days
+        end_idx = (user_t2 - data_t1).days + 1
+        return res_array[start_idx:end_idx]
+
+
+    from pprint import pprint
+    print('mean', len(_travel_map[county]['mean']))
+    print('rec', len(_travel_map[county]['recreation']))
+    print('gro', len(_travel_map[county]['grocery']))
+    print('par', len(_travel_map[county]['park']))
+    print('tra', len(_travel_map[county]['transit']))
+    print('wo', len(_travel_map[county]['work']))
+    print('resi', len(_travel_map[county]['resident']))
+    return _travel_map[county][attr]
+
+
+'''
 @county: county name
 '''
 def get_density(county): 
@@ -429,9 +564,39 @@ def get_density(county):
 
     return _density_map[county]
 
+'''
+return two kinds of counties in list.
+'''
+def get_rural_urban_counties(): 
+    global _metro_map
+    if _metro_map == None:
+        _metro_map = []
+        r_list, u_list = [], []
+        target_file = 'raw/PHR_MSA_County_masterlist.xlsx'
+        wb = xlrd.open_workbook(target_file)
+        sht = wb.sheet_by_index(0)
+
+        for i in range(1, sht.nrows):
+            county_text = sht.cell_value(i, 0).strip().upper()
+            metro_type = sht.cell_value(i, 7).strip()
+            if metro_type == 'Metro':
+                u_list.append(county_text)
+            else:
+                r_list.append(county_text)
+
+        _metro_map = r_list, u_list
+        return _metro_map
+
+    county = county.upper()
+
+    return _metro_map 
+
+
 def main():
-    county_list = get_population().keys()
-    tsa_list = get_region2county().keys()
+    #county_list = get_population().keys()
+    #tsa_list = get_region2county().keys()
+    r_list, u_list= get_rural_urban_counties()
+    print(len(r_list), len(u_list))
 
 if __name__ == '__main__':
     main()
