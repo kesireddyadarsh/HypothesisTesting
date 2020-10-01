@@ -4,6 +4,7 @@ import xlrd
 import numpy as np
 from datetime import datetime
 from scipy import stats
+import statistics
 
 _fatality_map = None
 _case_map = None
@@ -16,6 +17,16 @@ _fips_map = None
 _density_map = None
 _travel_map = None
 _metro_map = None
+_adj_map = None
+
+def ztest(a, b):
+    diff = [i-j for i,j in zip(a, b)]
+    std = statistics.stdev(diff)
+    mean = sum(diff)/len(diff)
+    se = std / len(diff)**(1/2)
+    z_value = (mean-0) / se
+    p_value = stats.norm.cdf(z_value)
+    return p_value
 
 '''
 Moving average / Moving mean
@@ -530,15 +541,6 @@ def get_travel(county, attr='mean', date_range=None):
         end_idx = (user_t2 - data_t1).days + 1
         return res_array[start_idx:end_idx]
 
-
-    from pprint import pprint
-    print('mean', len(_travel_map[county]['mean']))
-    print('rec', len(_travel_map[county]['recreation']))
-    print('gro', len(_travel_map[county]['grocery']))
-    print('par', len(_travel_map[county]['park']))
-    print('tra', len(_travel_map[county]['transit']))
-    print('wo', len(_travel_map[county]['work']))
-    print('resi', len(_travel_map[county]['resident']))
     return _travel_map[county][attr]
 
 
@@ -576,7 +578,7 @@ def get_rural_urban_counties():
         wb = xlrd.open_workbook(target_file)
         sht = wb.sheet_by_index(0)
 
-        for i in range(1, sht.nrows):
+        for i in range(1, sht.nrows-2):
             county_text = sht.cell_value(i, 0).strip().upper()
             metro_type = sht.cell_value(i, 7).strip()
             if metro_type == 'Metro':
@@ -591,12 +593,49 @@ def get_rural_urban_counties():
 
     return _metro_map 
 
+'''
+@county: county namee
+'''
+def get_adj_counties(county):
+    global _adj_map
+    if _adj_map == None:
+        target_file = 'raw/county_adjacency.txt'
+        finding = False
+        with open(target_file, newline='') as csvfile:
+            temp = csv.reader(csvfile, delimiter='\t', quotechar='|')
+            _adj_map = {}
+            for r in temp:
+                # adj
+                if r[0] == '':
+                    adj, adj_state = r[2].split(',')
+                    adj = adj[:-7].replace('"', '').strip().upper()
+                    adj_state = adj_state.replace('"', '').strip()
+                    #if state == 'TX' and adj_state == 'TX':
+                    if finding == True:
+                        if adj_state == 'TX':
+                            _adj_map[center].append(adj)
+                # center
+                else:
+                    center, state, adj, adj_state = *r[0].split(','), *r[2].split(',')
+                    center = center[:-7].replace('"', '').strip().upper()
+                    state = state.replace('"', '').strip()
+                    adj = adj.replace('"', '').strip().upper()
+                    adj_state = adj_state.replace('"', '').strip()
+                    if state == 'TX':
+                        finding = True
+                        _adj_map[center] = []
+                        if adj_state == 'TX':
+                            _adj_map[center].append(adj)
+                    else:
+                        finding = False
+    county = county.upper()
+    return _adj_map[county]
 
 def main():
     #county_list = get_population().keys()
     #tsa_list = get_region2county().keys()
-    r_list, u_list= get_rural_urban_counties()
-    print(len(r_list), len(u_list))
+    adj_counties = get_adj_counties('NUECES')
+    print(adj_counties)
 
 if __name__ == '__main__':
     main()
