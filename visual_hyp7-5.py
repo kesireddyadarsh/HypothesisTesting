@@ -38,7 +38,7 @@ for county in county_list:
 
 fig = ff.create_choropleth(
     scope=['TX',], 
-    legend_title='Confidence Level (%)', title='Spread vs (Residential + Grocery&Pharmary + Transit + Rereationi + Work + Park)',
+    legend_title='Confidence Level (%)', title='Spread vs (Residential + Grocery&Pharmary + Transit + Rereation + Work + Park)',
     binning_endpoints=[20, 40, 68, 95, 99.7],
     fips=fip_list, values=lv_list,
     colorscale=colorscale,

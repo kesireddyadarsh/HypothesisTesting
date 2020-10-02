@@ -5,23 +5,25 @@ from data_acq import *
 # Hypothesis 5 (z test)
 font = {
     #'family': 'Times New Roman',
-    'color':  'green',
+    'color':  'orange',
     'weight': 'normal',
     'size': 12,
 }
 county_list = get_population().keys()
-date_param = '06-04~07-15'
-date_param = '05-21~07-25'
 x, y = [], []
-for county in county_list:
-    tran_data = get_cases(county, date_range=date_param, number_form='transmission', mv_avg_days=42)
-    tran_rate = round(tran_data[0], 1)
-    density = get_density(county)
-    x.append(density)
-    y.append(tran_rate)
+
+
+date_param = '04-12~09-21'
+tsa = 'CORPUS CHRISTI'
+x = get_hospitalization(tsa=tsa, gain=100, date_range=date_param, accu_format=True)
+y = get_fatality(tsa=tsa, date_range=date_param)
+slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+level = round(1 - abs(p_value), 4) * 100 
+
+print(p_value)
+print(level)
 
 slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
-print(p_value)
 r_info = 'R^2 = {}'.format(round(r_value**2, 3))
 linear_eq = 'y = {}*x + {}'.format(
     round(slope,3), 
@@ -29,16 +31,16 @@ linear_eq = 'y = {}*x + {}'.format(
     round(r_value**2, 3)
 )
 
-coef = np.polyfit(x, y, slope)
-poly1d_fn = np.poly1d(coef) 
+coef = np.polyfit(x, y, 1)
+poly1d_fn = np.poly1d(coef)
 
 fig, ax = plt.subplots()
-plt.xlabel('Population Density (per sq mi)')
-plt.ylabel('Cases per million population ({})'.format(date_param))
-ax.set_title('Population Density vs Transmission Rate')
+plt.xlabel('Hospitalization Rate (%)')
+plt.ylabel('Fatality Rate (%)')
+ax.set_title('Corpus Christi ({})- Hospitalization Rate vs Fatality Rate'.format(date_param))
 plt.text(
-    x=1500,
-    y=250, 
+    x=30,
+    y=2, 
     s=r_info,
     rotation=0,
     horizontalalignment='left',
@@ -47,8 +49,8 @@ plt.text(
     fontdict=font
 )
 plt.text(
-    x=1500,
-    y=220, 
+    x=30,
+    y=1, 
     s=linear_eq,
     rotation=0,
     horizontalalignment='left',
@@ -57,7 +59,7 @@ plt.text(
     fontdict=font
 )
 
-plt.plot(x,y, 'yo', x, poly1d_fn(x), '--k')
+plt.plot(x,y, 'go', x, poly1d_fn(x), '--r')
 png_name = 'output/{}.png'.format(__file__[:-3])
 plt.savefig(png_name)
 

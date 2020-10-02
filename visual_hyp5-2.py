@@ -13,7 +13,7 @@ colorscale = [
 county_list = get_population().keys()
 fip_list = []
 res_list = []
-date_param = '06-04~07-15'
+date_param = '05-21~07-25'
 
 for county in county_list:
     trans_data = get_cases(county, date_range=date_param, number_form='transmission', mv_avg_days=42)
@@ -25,7 +25,7 @@ for county in county_list:
 
 fig = ff.create_choropleth(
     scope=['TX',], 
-    legend_title= '(06-04 ~ 07-15)', title='Transimission Rate',
+    legend_title= '({})'.format(date_param), title='Transimission Rate',
     binning_endpoints=[10, 150, 300, 450, 600],
     fips=fip_list, values=res_list,
     colorscale=colorscale,

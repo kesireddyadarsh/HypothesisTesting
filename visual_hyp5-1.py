@@ -14,6 +14,7 @@ county_list = get_population().keys()
 fip_list = []
 res_list = []
 date_param = '06-04~07-15'
+date_param = '05-21~07-25'
 
 for county in county_list:
     #tran_data = get_cases(county, date_range=date_param, number_form='transmission', mv_avg_days=42)
